@@ -176,10 +176,12 @@ Field Board::operator[](Point p) const
 {
 	return fields[p.y][p.x];
 }
+
 Field& Board::operator[](Point p)
 {
 	return fields[p.y][p.x];
 }
+
 Field& Board::at(Point p) 
 {
 	return fields[p.y][p.x];
