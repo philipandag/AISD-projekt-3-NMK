@@ -1,6 +1,5 @@
 #pragma once
 #include "Field.h"
-#include "time.h"
 
 class Board
 {
@@ -14,34 +13,27 @@ public:
 public:
 	Board(int n, int m, int k, Field player);
 	Board();
-	Board& operator=(Board& other);
-	int getN() const;
-	int getM() const;
-	int getK() const;
 	Field* operator[](size_t index);
 	const Field* operator[](size_t index) const;
-	friend ostream& operator<<(ostream& os, const Board& board);
+	void print();
 	void clearFlags(Point** winningMoves, int* counter);
-	Field::Value checkWin() const;
+	Field checkWin();
 	Field checkWinningSituations();
-	Field checkWinningSituation(Point pos);
-	Field::Value checkWinAt(Point pos) const;
+	Field checkWinAt(Point pos);
 	bool onBoard(Point p) const;
 	Field operator[](Point p) const;
 	Field& operator[](Point p);
 	Field& at(Point p);
-	int countInDirection(Point p, Direction d) const;
-	Board& operator<<(istream& is);
+	int countInDirection(Point p, Point delta);
+	Board& read();
 	int getEmptyFields() const;
 	Field getPlayer() const;
-	void print(ostream& os) const;
-	void generateMoves(ostream& os) const;
-	void generateMovesCut(ostream& os) const;
-	bool checkInitialWin(ostream& os) const;
-	Board* copyChangePlayer();
+	void generateMoves();
+	void generateMovesCut();
 	Field solve();
-	Field solveAlphaBeta(Field alpha, Field beta);
-	void solveGame(ostream& os) const;
+	void solveGame();
 	Board& set(Point p, Field value);
+	void km1SequencesIncrementer(Field front, int frontCounter, Field back, int backCounter, int& P1Sequences, int& P2Sequences) const;
+	Field km1SequencesGetWinner(int P1Sequences, int P2Sequences) const;
 	~Board();
 };

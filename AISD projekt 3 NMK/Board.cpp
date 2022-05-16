@@ -1,20 +1,16 @@
 #include "Board.h"
 
-int GAMES_SOLVED = 0;
-
 Board::Board(int n, int m, int k, Field player):
 	n(n), m(m), k(k), player(player), fields(createFields(n, m)), emptyFields(0)
 {}
-
-
 
 Board::Board():
 	n(0), m(0), k(0), player(Field::EMPTY), fields(nullptr), emptyFields(0)
 {}
 
-Field::Value Board::checkWin() const
+Field Board::checkWin()
 {
-	Field::Value win = Field::EMPTY;
+	Field win = Field::EMPTY;
 
 	for (int y = 0; y < n; y++)
 		for (int x = 0; x < m; x++)
@@ -26,15 +22,14 @@ Field::Value Board::checkWin() const
 	return Field::EMPTY;
 }
 
-
-Field::Value Board::checkWinAt(Point pos) const
+Field Board::checkWinAt(Point pos)
 {
 	if ((*this)[pos] == Field::EMPTY)
 		return Field::EMPTY;
 
 	for (Direction d = Direction::E; d < Direction::W; ++d) // >, _\, \/, /_
-		if (countInDirection(pos, d) >= k)
-			 return (*this)[pos].value;
+		if (countInDirection(pos, d.getP()) >= k)
+			 return at(pos);
 			
 
 	return Field::EMPTY;
@@ -45,52 +40,17 @@ bool Board::onBoard(Point p) const
 	return p.x >= 0 && p.x < m && p.y >= 0 && p.y < n;
 }
 
-int Board::countInDirection(Point p, Direction d) const
+int Board::countInDirection(Point p, Point delta)
 {
-	if (!onBoard(p))
+	if (!onBoard(p) || empty(at(p)))
 		return 0;
 
 	int counter = 1;
-	Point delta = d.getP();
-
-	Field first = fields[p.y][p.x];
-	while (onBoard(p + delta) && (*this)[p + delta] == first)
-	{
-		p += delta;
+	Field first = at(p);
+	while (onBoard(p + delta * counter) && at(p + delta * counter) == first){
 		counter++;
 	}
 	return counter;
-}
-
-Board& Board::operator=(Board& other)
-{
-	if (this != &other)
-	{
-		this->emptyFields = other.emptyFields;
-
-		if (this->n != other.getN() || this->m != other.getM())
-		{
-			delete this->fields;
-			this->fields = createFields(other.getN(), other.getM());
-		}
-
-		for (int y = 0; y < n; y++)
-			for (int x = 0; x < m; x++)
-				fields[y][x] = other[y][x];
-	}
-	return *this;
-}
-
-int Board::getN() const {
-	return n;
-}
-
-int Board::getM() const {
-	return m;
-}
-
-int Board::getK() const {
-	return k;
 }
 
 Field* Board::operator[](size_t index) {
@@ -103,43 +63,37 @@ const Field* Board::operator[](size_t index) const {
 
 ostream& operator<<(ostream& os, const Board& board)
 {
-	for (int y = 0; y < board.getN(); y++)
+	for (int y = 0; y < board.n; y++)
 	{
-		for (int x = 0; x < board.getM(); x++)
-			printf("%d ", board[y][x]);
-		printf("\n");
+		for (int x = 0; x < board.m; x++)
+			printf_s("%d ", fieldToSymbol(board.fields[y][x]));
+		printf_s("\n");
 	}
 	return os;
 }
 
-Board& Board::operator<<(istream& is)
+Board& Board::read()
 {
 	if (fields != nullptr)
 		deleteFields();
-	is >> n >> m >> k >> player;
+	int playerSym;
+	scanf_s("%d %d %d %d", &n, &m, &k, &playerSym);
+	player = symbolToField(playerSym);
 
 	fields = createFields(n, m);
 	emptyFields = 0;
 
+	int f;
 	for (int y = 0; y < n; y++)
 		for (int x = 0; x < m; x++)
 		{
-			is >> fields[y][x];
-			if (fields[y][x].empty())
+			scanf_s("%d", &f);
+			fields[y][x] = symbolToField(f);
+			if (empty(fields[y][x]))
 				emptyFields++;
 		}
 
 	return *this;
-}
-
-int Board::getEmptyFields() const
-{
-	return emptyFields;
-}
-
-Field Board::getPlayer() const
-{
-	return player;
 }
 
 void Board::deleteFields()
@@ -149,21 +103,23 @@ void Board::deleteFields()
 	delete fields;
 }
 
-void Board::generateMoves(ostream& os) const
+void Board::generateMoves()
 {
-	if (checkInitialWin(os))
+	if (checkWin() != Field::EMPTY)
+	{
+		printf_s("0\n");
 		return;
+	}
 
-	os << "\n" << emptyFields << "\n";
+	printf_s("\n%d\n", emptyFields);
 
-	Board copy = (*this);
 	for (int y = 0; y < n; y++)
 		for (int x = 0; x < m; x++)
-			if (copy[y][x].empty())
+			if (empty(fields[y][x]))
 			{
-				copy[y][x] = player;
-				os << copy << endl;
-				copy[y][x].value = Field::EMPTY;
+				fields[y][x] = player;
+				print();
+				fields[y][x] = Field::EMPTY;
 			}
 }
 
@@ -187,52 +143,35 @@ Field& Board::at(Point p)
 	return fields[p.y][p.x];
 }
 
-bool Board::checkInitialWin(ostream& os) const
+void Board::generateMovesCut()
 {
 	if (checkWin() != Field::EMPTY)
 	{
-		os << 0 << "\n";
-		return true;
-	}
-	return false;
-}
-
-void Board::generateMovesCut(ostream& os) const
-{
-	if (checkInitialWin(os))
+		fprintf_s(stdout, "0\n");
 		return;
-
-	Board copy = (*this);
+	}
 
 	for (int y = 0; y < n; y++)
 		for (int x = 0; x < m; x++)
-			if (copy[y][x].empty())
+			if (empty(fields[y][x]))
 			{
-				copy[y][x] = player;
-				if (copy.checkWin())
+				fields[y][x] = player;
+				if (checkWin())
 				{
-					os << 1 << endl << copy;
+					printf_s("1\n");
+					print();
 					return;
 				}
-				copy[y][x].value = Field::EMPTY;
+				fields[y][x] = Field::EMPTY;
 			}
 
-	generateMoves(os);
+	generateMoves();
 }
 
-void Board::solveGame(ostream& os) const
+void Board::solveGame()
 {
-	Board copy = (*this);
-	Field result = copy.solve();
-	os << RESULTS[result.value] << endl;
-	GAMES_SOLVED++;
-}
-
-Board* Board::copyChangePlayer()
-{
-	Board* copy = new Board((*this));
-	copy->player = player.getOtherPlayer();
-	return copy;
+	Field result = solve();
+	printf_s("%s\n", RESULTS[fieldToSymbol(result)]);
 }
 
 Board& Board::set(Point p, Field value)
@@ -251,14 +190,17 @@ Board& Board::set(Point p, Field value)
 
 Field Board::solve()
 {
-	Field win = checkWinningSituations();
+	Field win = checkWin();
+	if (win == Field::P1 || win == Field::P2)
+		return win;
+	win = checkWinningSituations();
 	if (win == Field::P1 || win == Field::P2)
 		return win;
 
 	if (emptyFields == 0)
 		return Field::EMPTY;
 
-	Field otherPlayer = player.getOtherPlayer();
+	Field otherPlayer = getOtherPlayer(player);
 	Field best = otherPlayer; // other player wins - the worst scenario
 
 	int resultNumber = 0;
@@ -268,10 +210,10 @@ Field Board::solve()
 			{
 				Point pos = { x, y };
 				set(pos, player);
-				player = player.getOtherPlayer();
+				player = getOtherPlayer(player);
 				Field result = solve();
 				set({ x, y }, Field::EMPTY);
-				player = player.getOtherPlayer();
+				player = getOtherPlayer(player);
 
 				if (result == player) // quick optimisation - if its the best option - it would be chosen no matter what the others would be, so don't bother checking them
 					return player;
@@ -292,78 +234,96 @@ Field Board::checkWinningSituations()
 {
 	Point pos;
 	Point delta;
-	int winningMovesCount[2];
-	winningMovesCount[Field::P1] = 0;
-	winningMovesCount[Field::P2] = 0;
+	int P1km1Sequences = 0;
+	int P2km1Sequences = 0;
+
+	Field frontField = Field::EMPTY;
+	int frontCounter = 0;
+	Field backField = Field::EMPTY;
+	int backCounter = 0;
 
 	for (int y = 0; y < n; y++)
 	{
 		for (int x = 0; x < m; x++)
 		{
 			pos = { x,y };
-			if (at(pos).empty())
+			if (empty(at(pos)))
 			{
 				for (Direction d = Direction::E; d < Direction::W; ++d)
 				{
 					delta = d.getP();
-					int backCount, frontCount;
 
-					if (onBoard(pos-delta) && !at(pos-delta).empty())
-					{
-						backCount = 1;
-						for (int i = 2; i <= k; i++)
-							if (onBoard(pos-delta*i) && at(pos - delta * i) == at(pos-delta))
-								backCount++;
-							else
-								break;
+					frontCounter = countInDirection(pos + delta, delta);
+					backCounter = countInDirection(pos - delta, -delta);
+					frontField = frontCounter > 0 ? at(pos + delta) : Field::EMPTY;
+					backField = backCounter > 0 ? at(pos - delta) : Field::EMPTY;
 
-						if (backCount == k)
-							return at(pos-delta);
-					}
-					else
-						backCount = 0;
-			
-					if (onBoard(pos + delta) && !at(pos+delta).empty())
-					{
-						frontCount = 1;
-						for (int i = 2; i <= k; i++)
-							if (onBoard(pos - delta * i) && at(pos - delta * i) == at(pos+delta))
-								frontCount++;
-							else
-								break;
-
-						if (frontCount == k)
-							return at(pos+delta);
-					}else
-						frontCount = 0;
-
-					if (onBoard(pos-delta) && onBoard(pos+delta) && at(pos-delta) == at(pos+delta) && backCount + frontCount + 1 >= k)
-						winningMovesCount[at(pos-delta).value]++;
-					else if(onBoard(pos-delta) && backCount + 1 >= k)
-						winningMovesCount[at(pos - delta).value]++;
-					else if(onBoard(pos + delta) && frontCount + 1 >= k)
-						winningMovesCount[at(pos + delta).value]++;
-
+					if (frontCounter == k)
+						return frontField;
+					if (backCounter == k)
+						return backField;
+					
+					km1SequencesIncrementer(frontField, frontCounter, backField, backCounter, P1km1Sequences, P2km1Sequences);	
 				}
 			}
 		}
 	}
+	return km1SequencesGetWinner(P1km1Sequences, P2km1Sequences);
+}
 
-	Field win = Field::EMPTY;
-	if (winningMovesCount[Field::P1] >= 2)
-	{
-		if (winningMovesCount[Field::P2] >= 1)
-			win = player;
-		else
-			win = Field::P1;
+void Board::km1SequencesIncrementer(Field front, int frontCounter, Field back, int backCounter, int& P1Sequences, int& P2Sequences) const
+{
+	if (front == back && frontCounter + backCounter >= (k - 1)) {
+		if (front == P1) {
+			P1Sequences++;
+		}
+		else if (front == P2) {
+			P2Sequences++;
+		}
 	}
-	else if (winningMovesCount[Field::P2] >= 2)
+	else
 	{
-		if (winningMovesCount[Field::P1] >= 1)
-			win = player;
-		else
-			win = Field::P2;
-	}
+		if (frontCounter == (k - 1)) {
+			if (front == P1) {
+				P1Sequences++;
+			}
+			else if (front == P2) {
+				P2Sequences++;
+			}
+		}
 
-	return win;
+		if (backCounter == (k - 1)) {
+			if (back == P1) {
+				P1Sequences++;
+			}
+			else if (back == P2) {
+				P2Sequences++;
+			}
+		}
+	}
+}
+
+Field Board::km1SequencesGetWinner(int P1Sequences, int P2Sequences) const{
+	if (P1Sequences >= 1 && player == P1)
+		return P1;
+	if (P2Sequences >= 1 && player == P2)
+		return P2;
+	if (P1Sequences >= 2)
+		return P1;
+	if (P2Sequences >= 2)
+		return P2;
+
+	return Field::EMPTY;
+}
+
+void Board::print() 
+{
+	for (int y = 0; y < n; y++)
+	{
+		for (int x = 0; x < m; x++) {
+			printf_s("%d ", fieldToSymbol(fields[y][x]));
+		}
+		printf_s("\n");
+	}
+	printf_s("\n");
 }

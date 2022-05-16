@@ -3,7 +3,7 @@
 extern const char* RESULTS[3] = {
 	"BOTH_PLAYERS_TIE",
 	"FIRST_PLAYER_WINS",
-	"SECOND_PLAYER_WINS"
+	"SECOND_PLAYER_WINS",
 };
 
 Field** createFields(int n, int m)
@@ -18,60 +18,53 @@ istream& operator>>(istream& is, Field& f)
 {
 	int a;
 	if (is >> a)
-		f.value = static_cast<Field::Value>(a==0?2:(a-1));
+		f = symbolToField(a);
 	return is;
 }
 
-Field Field::getOtherPlayer()
+Field getOtherPlayer(Field f)
 {
-	Field p = *this;
-	p.value = value == Field::Value::P1 ? Field::Value::P2 : Field::Value::P1;
-	return p;
+	return f == Field::P1 ? Field::P2 : Field::P1;
 }
 
-bool Field::operator<(Field than)
+bool operator<(Field lesser, Field than)
 {
-	if (value == Value::P1 && than.value == Value::EMPTY)
+	if (lesser == P1 && than == EMPTY)
 		return false;
-	if (value == Value::EMPTY && than.value == Value::P1)
+	if (lesser == EMPTY && than == P1)
 		return true;
-	return value < than.value;
+	return lesser < than;
 }
 
-bool Field::operator>(Field than)
+bool operator>(Field greater, Field than)
 {
-	if (value == Value::P1 && than.value == Value::EMPTY)
+	if (greater == P1 && than == EMPTY)
 		return true;
-	if (value == Value::EMPTY && than.value == Value::P1)
+	if (greater == EMPTY && than == P1)
 		return false;
-	return value < than.value;
+	return greater < than;
 }
 
-bool Field::operator<=(Field than)
+bool operator<=(Field lesser, Field than)
 {
-	return value == than.value || value < than.value;
+	return lesser == than || lesser < than;
 }
-bool Field::operator>=(Field than)
+bool operator>=(Field greater, Field than)
 {
-	return value == than.value || value > than.value;
-}
-
-bool Field::empty()
-{
-	return this->value == Value::EMPTY;
+	return greater == than || greater > than;
 }
 
-bool Field::notChecked(Field player)
+bool empty(Field f)
 {
-	return value == Value::EMPTY && winningMove[(int)player.value] == false;
+	return f == EMPTY;
 }
 
-bool Field::operator==(Field f)
+Field symbolToField(int n) 
 {
-	return value == f.value;
+	return n == 2 ? P2 : static_cast<Field>(n);
 }
 
-bool Field::operator!=(Field f)
+int fieldToSymbol(Field f)
 {
-	return value != f.value;
+	return f == P2 ? 2 : f;
 }

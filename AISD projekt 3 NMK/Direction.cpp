@@ -5,7 +5,7 @@ Direction::Direction()
 	setDir(N);
 }
 
-Direction::Direction(Directions&& d)
+Direction::Direction(Directions d)
 {
 	setDir(d);
 }
@@ -26,12 +26,14 @@ Direction& Direction::operator++()
 	this->dir = static_cast<Directions>((this->dir + 1) % DIRECTIONS_AMOUNT);
 	return *this;
 }
+
 int Direction::getDX() const
 {
 	return dir > N && dir < S ? 1 
 		: dir > S || dir < N ? -1
 		: 0;
 }
+
 int Direction::getDY() const
 {
 	return dir > W || dir < E ? -1

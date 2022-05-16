@@ -21,7 +21,7 @@ private:
 
 public:
 	Direction();
-	Direction(Directions&& d);
+	Direction(Directions d);
 	Direction& setDir(Directions d);
 	bool operator==(Direction& other) const;
 	Direction& operator++();
@@ -31,4 +31,3 @@ public:
 	Direction& operator=(Directions d);
 	bool operator<(Directions d) const;
 };
-
